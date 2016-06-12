@@ -6,7 +6,7 @@ describe Signifyd::Case do
   let(:case_id) { (rand * 1000).ceil }
   let(:order_id) { 'unique_id'}
   let(:investigation) { "{\"investigationId\":#{case_id}}" }
-  let(:retrieved_case) {"{\"orderId\":#{case_id}}" }
+  let(:retrieved_case) {"{\"orderId\":\"#{order_id}\", \"caseId\":#{case_id}}" }
 
   context '.create' do
     context 'when creating a case with a valid API key' do
@@ -94,9 +94,11 @@ describe Signifyd::Case do
     before :each do
       Signifyd.api_key = SIGNIFYD_API_KEY
     end
+
     after :each do
       Signifyd.api_key = nil
     end
+
     context 'when case with orderId exists' do
       it 'should return case in hash format' do
         stub_request(:get, "https://#{Signifyd.api_key}@api.signifyd.com/v2/orders/#{order_id}/case").
@@ -109,6 +111,7 @@ describe Signifyd::Case do
         expect(subject[:body][:orderId]).to eq(JSON.parse(retrieved_case)[:orderId])
       end
     end
+
     context 'when case with orderID does not exist' do
       it 'should raise exception' do
         exception = RestClient::ExceptionWithResponse.new('test')
@@ -121,6 +124,31 @@ describe Signifyd::Case do
         expect {Signifyd::Case.find({order_id: order_id})}.to raise_error(Signifyd::InvalidRequestError)
       end
     end
-  end
 
+    context 'when case with caseId exists' do
+      it 'should return case in hash format' do
+        stub_request(:get, "https://#{Signifyd.api_key}@api.signifyd.com/v2/cases/#{case_id}").
+          with(:body => {}, :headers => {'Accept'=>'*/*; q=0.5, application/xml', 'Accept-Encoding'=>'gzip, deflate', 'Content-Length'=>2, 'Content-Type'=>'application/json', 'User-Agent'=>'Signifyd Ruby v2'}).
+          to_return(:status => 200, :body => retrieved_case, :headers => {})
+
+        subject = Signifyd::Case.find({case_id: case_id})
+        expect(subject).to be_true
+        expect(subject[:code]).to eq(200)
+        expect(subject[:body][:caseId]).to eq(JSON.parse(retrieved_case)[:caseId])
+      end
+    end
+
+    context 'when case with caseId does not exist' do
+      it 'should raise exception' do
+        exception = RestClient::ExceptionWithResponse.new('test')
+        exception.should_receive(:http_code).and_return(400)
+        exception.should_receive(:http_body).and_return('as')
+        stub_request(:get, "https://#{Signifyd.api_key}@api.signifyd.com/v2/cases/#{case_id}").
+          with(:body => {}, :headers => {'Accept'=>'*/*; q=0.5, application/xml', 'Accept-Encoding'=>'gzip, deflate', 'Content-Length'=>2, 'Content-Type'=>'application/json', 'User-Agent'=>'Signifyd Ruby v2'}).
+          to_raise(exception)
+
+        expect {Signifyd::Case.find({case_id: case_id})}.to raise_error(Signifyd::InvalidRequestError)
+      end
+    end
+  end
 end

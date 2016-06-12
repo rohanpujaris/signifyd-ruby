@@ -246,6 +246,8 @@ module Signifyd
     when 'get'
       if options.has_key?(:order_id)
         url = url.gsub('cases', "orders/#{options[:order_id]}/case")
+      elsif options.has_key?(:case_id)
+        url = "#{url}/#{options[:case_id]}"
       end
     when 'post'
 

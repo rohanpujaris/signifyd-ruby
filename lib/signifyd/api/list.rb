@@ -5,8 +5,8 @@ module Signifyd
         def all(filters={}, api_key=nil)
           Signifyd.request(:get, url, {}, api_key, filters)
         end
-        # To retrieve case by orderId pass in {order_id: value}
-        # into options
+        # To retrieve case by orderId or caseId pass in {order_id: value}
+        # or {case_id: value} into options
         def find(options={}, filters={},api_key=nil)
           Signifyd.request(:get, url, filters, api_key, options)
         end
